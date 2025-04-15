@@ -19,7 +19,22 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '16'
-          cache: 'npm'
+      
+      - name: Create package.json
+        run: |
+          echo '{
+            "name": "instagram-recipe-automation",
+            "version": "1.0.0",
+            "description": "Automation for Instagram recipes",
+            "dependencies": {
+              "dotenv": "^16.0.0",
+              "canvas": "^2.9.0",
+              "cloudinary": "^1.37.3",
+              "node-fetch": "^2.6.12",
+              "mammoth": "^1.6.0",
+              "pdf-parse": "^1.1.1"
+            }
+          }' > package.json
       
       - name: Install dependencies
         run: npm install
