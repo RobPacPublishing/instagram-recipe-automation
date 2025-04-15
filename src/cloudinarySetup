@@ -1,0 +1,146 @@
+/**
+ * Configurazione Cloudinary per la generazione di immagini
+ */
+const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
+const path = require('path');
+
+// Assicurati che la directory per le immagini esista
+const imagesDir = path.join(__dirname, '../../data/images');
+if (!fs.existsSync(imagesDir)) {
+  fs.mkdirSync(imagesDir, { recursive: true });
+}
+
+// Configura Cloudinary con le tue credenziali
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'your_cloud_name',
+  api_key: process.env.CLOUDINARY_API_KEY || 'your_api_key',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'your_api_secret'
+});
+
+/**
+ * Genera un'immagine per una ricetta
+ * @param {Object} recipe - Dati della ricetta
+ * @param {string} outputPath - Percorso dove salvare l'immagine
+ * @returns {Promise<string>} - URL dell'immagine generata
+ */
+async function generateRecipeImage(recipe, outputPath) {
+  try {
+    // Crea testo per l'overlay
+    const title = recipe.title.substring(0, 50); // Limita la lunghezza del titolo
+    
+    // Crea un'immagine di sfondo con testo sovrapposto
+    const result = await cloudinary.uploader.upload("https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg", {
+      public_id: `recipe-${Date.now()}`,
+      transformation: [
+        { width: 1080, height: 1080, crop: "fill" },
+        { overlay: { font_family: "Arial", font_size: 60, text: title }, 
+          color: "#FFFFFF", 
+          background: "rgba(0,0,0,0.7)", 
+          gravity: "north", 
+          y: 80 }
+      ]
+    });
+
+    if (outputPath) {
+      // Scarica l'immagine e salvala localmente
+      const https = require('https');
+      const file = fs.createWriteStream(outputPath);
+      
+      https.get(result.secure_url, (response) => {
+        response.pipe(file);
+      });
+    }
+
+    return result.secure_url;
+  } catch (error) {
+    console.error('Errore nella generazione dell\'immagine:', error);
+    throw error;
+  }
+}
+
+/**
+ * Genera un'immagine di fallback per le ricette
+ * Usa una canvas HTML per creare un'immagine quando Cloudinary non è disponibile
+ * @param {Object} recipe - Dati della ricetta
+ * @param {string} outputPath - Percorso dove salvare l'immagine
+ * @returns {Promise<string>} - Percorso locale dell'immagine
+ */
+async function generateLocalImage(recipe, outputPath) {
+  try {
+    const { createCanvas } = require('canvas');
+    
+    // Crea un canvas di 1080x1080 (formato Instagram)
+    const canvas = createCanvas(1080, 1080);
+    const ctx = canvas.getContext('2d');
+    
+    // Imposta lo sfondo
+    ctx.fillStyle = '#F5F5DC'; // Beige chiaro
+    ctx.fillRect(0, 0, 1080, 1080);
+    
+    // Imposta il titolo
+    ctx.fillStyle = '#8B4513'; // Marrone
+    ctx.font = 'bold 60px Arial';
+    ctx.textAlign = 'center';
+    
+    // Gestisci titoli lunghi
+    const title = recipe.title;
+    if (title.length > 30) {
+      const words = title.split(' ');
+      let line = '';
+      let y = 200;
+      
+      for (const word of words) {
+        const testLine = line + word + ' ';
+        if (testLine.length > 25) {
+          ctx.fillText(line, 540, y);
+          line = word + ' ';
+          y += 70;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, 540, y);
+    } else {
+      ctx.fillText(title, 540, 200);
+    }
+    
+    // Aggiungi ingredienti
+    ctx.fillStyle = '#000000';
+    ctx.font = '40px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Ingredienti:', 100, 350);
+    
+    ctx.font = '30px Arial';
+    let ingredientY = 400;
+    for (let i = 0; i < Math.min(5, recipe.ingredients.length); i++) {
+      const ingredient = recipe.ingredients[i];
+      if (ingredient.length > 40) {
+        ctx.fillText(`• ${ingredient.substring(0, 40)}...`, 120, ingredientY);
+      } else {
+        ctx.fillText(`• ${ingredient}`, 120, ingredientY);
+      }
+      ingredientY += 40;
+    }
+    
+    // Aggiungi un bordo decorativo
+    ctx.strokeStyle = '#8B4513';
+    ctx.lineWidth = 20;
+    ctx.strokeRect(40, 40, 1000, 1000);
+    
+    // Salva l'immagine
+    const buffer = canvas.toBuffer('image/png');
+    fs.writeFileSync(outputPath, buffer);
+    
+    return outputPath;
+  } catch (error) {
+    console.error('Errore nella generazione dell\'immagine locale:', error);
+    throw error;
+  }
+}
+
+module.exports = {
+  cloudinary,
+  generateRecipeImage,
+  generateLocalImage
+};
