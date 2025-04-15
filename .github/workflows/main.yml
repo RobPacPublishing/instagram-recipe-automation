@@ -47,7 +47,7 @@ jobs:
       - name: Execute image generation script
         env:
           OFFLINE_MODE: 'true'
-        run: node src/automation.js generate-images
+        run: test.js
       
       - name: Upload generated files
         uses: actions/upload-artifact@master
