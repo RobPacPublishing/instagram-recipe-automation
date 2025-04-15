@@ -1,0 +1,91 @@
+/**
+ * Script per generare immagini per tutte le ricette
+ */
+require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+const { generateRecipeImage, generateLocalImage } = require('./cloudinarySetup');
+
+// Configura i percorsi
+const recipesJsonPath = path.join(__dirname, '../../data/recipes.json');
+const imagesDir = path.join(__dirname, '../../data/images');
+
+// Assicurati che la directory per le immagini esista
+if (!fs.existsSync(imagesDir)) {
+  fs.mkdirSync(imagesDir, { recursive: true });
+}
+
+/**
+ * Genera immagini per tutte le ricette 
+ */
+async function generateAllImages() {
+  try {
+    // Leggi le ricette
+    const recipesData = fs.readFileSync(recipesJsonPath, 'utf8');
+    const recipes = JSON.parse(recipesData);
+    
+    console.log(`Generazione immagini per ${recipes.length} ricette...`);
+    
+    // Crea un file JSON per tenere traccia delle ricette e relative immagini
+    const recipeImages = [];
+    
+    // Genera un'immagine per ogni ricetta
+    for (let i = 0; i < recipes.length; i++) {
+      const recipe = recipes[i];
+      console.log(`Generazione immagine per "${recipe.title}" (${i+1}/${recipes.length})`);
+      
+      // Definisci il percorso di output
+      const fileName = `recipe-${i+1}.png`;
+      const outputPath = path.join(imagesDir, fileName);
+      
+      let imageUrl;
+      
+      try {
+        // Prova a usare Cloudinary
+        if (process.env.CLOUDINARY_CLOUD_NAME && 
+            process.env.CLOUDINARY_API_KEY && 
+            process.env.CLOUDINARY_API_SECRET) {
+          imageUrl = await generateRecipeImage(recipe, outputPath);
+          console.log(`  Immagine creata con Cloudinary: ${imageUrl}`);
+        } else {
+          // Altrimenti usa l'approccio locale
+          imageUrl = await generateLocalImage(recipe, outputPath);
+          console.log(`  Immagine creata localmente: ${outputPath}`);
+        }
+        
+        // Aggiungi alla lista
+        recipeImages.push({
+          id: i + 1,
+          title: recipe.title,
+          imagePath: outputPath,
+          imageUrl: imageUrl
+        });
+      } catch (err) {
+        console.error(`  Errore nella generazione dell'immagine per "${recipe.title}":`, err);
+      }
+    }
+    
+    // Salva il file con le associazioni ricette-immagini
+    const recipeImagesPath = path.join(__dirname, '../../data/recipe-images.json');
+    fs.writeFileSync(recipeImagesPath, JSON.stringify(recipeImages, null, 2));
+    
+    console.log(`Generazione immagini completata. Salvate in: ${imagesDir}`);
+    console.log(`Indice delle immagini salvato in: ${recipeImagesPath}`);
+    
+    return recipeImages;
+  } catch (error) {
+    console.error('Errore nella generazione delle immagini:', error);
+    throw error;
+  }
+}
+
+// Se eseguito direttamente, avvia la generazione
+if (require.main === module) {
+  generateAllImages()
+    .then(() => console.log('Processo completato!'))
+    .catch(err => console.error('Errore:', err));
+}
+
+module.exports = {
+  generateAllImages
+};
