@@ -35,7 +35,7 @@ jobs:
         run: node src/automation.js generate-images
       
       - name: Upload generated files
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@master
         with:
           name: generated-recipe-images
           path: data/images/
