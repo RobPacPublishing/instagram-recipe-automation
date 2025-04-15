@@ -1,0 +1,41 @@
+name: Generate Recipe Images
+
+on:
+  schedule:
+    # Esegui ogni giorno alle 11:00 UTC
+    - cron: '0 11 * * *'
+  # Consente l'esecuzione manuale dal tab Actions
+  workflow_dispatch:
+
+jobs:
+  generate-images:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install canvas dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcairo2-dev libjpeg-dev libpango1.0-dev libgif-dev build-essential g++
+      
+      - name: Execute image generation script
+        env:
+          OFFLINE_MODE: 'true'
+        run: node src/automation.js generate-images
+      
+      - name: Upload generated files
+        uses: actions/upload-artifact@v3
+        with:
+          name: generated-recipe-images
+          path: data/images/
