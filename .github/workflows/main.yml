@@ -41,34 +41,188 @@ jobs:
       - name: Create directories
         run: mkdir -p data/images
       
-      - name: Create simple test image
+      - name: Create advanced recipe image generator
         run: |
-          cat > test-image.js << 'EOL'
+          cat > recipe-generator.js << 'EOL'
           const fs = require('fs');
-          const { createCanvas } = require('canvas');
+          const { createCanvas, loadImage } = require('canvas');
           
-          // Crea un'immagine di test
-          const canvas = createCanvas(1080, 1080);
-          const ctx = canvas.getContext('2d');
+          // Configurazione
+          const WIDTH = 1080;
+          const HEIGHT = 1080;
+          const OUTPUT_DIR = 'data/images';
           
-          // Sfondo
-          ctx.fillStyle = '#F5F5DC';
-          ctx.fillRect(0, 0, 1080, 1080);
+          // Ricette di esempio
+          const recipes = [
+            {
+              title: "Pasta al Pomodoro",
+              ingredients: [
+                "400g di pasta",
+                "300g di pomodori",
+                "2 spicchi d'aglio",
+                "Basilico fresco",
+                "3 cucchiai di olio d'oliva",
+                "Sale e pepe q.b."
+              ],
+              instructions: [
+                "Soffriggere l'aglio in olio",
+                "Aggiungere i pomodori a pezzi",
+                "Cuocere per 15 minuti",
+                "Aggiungere basilico e condire",
+                "Cuocere la pasta e mescolare"
+              ],
+              prepTime: "10 minuti",
+              cookTime: "20 minuti",
+              servings: "4 persone"
+            },
+            {
+              title: "Risotto ai Funghi",
+              ingredients: [
+                "320g di riso per risotti",
+                "250g di funghi champignon",
+                "1 cipolla",
+                "500ml di brodo vegetale",
+                "50g di parmigiano",
+                "30g di burro",
+                "Vino bianco q.b.",
+                "Sale e pepe q.b."
+              ],
+              instructions: [
+                "Soffriggere la cipolla nel burro",
+                "Aggiungere il riso e tostare",
+                "Sfumare con vino bianco",
+                "Aggiungere i funghi tritati",
+                "Cuocere aggiungendo brodo poco a poco",
+                "Mantecare con parmigiano"
+              ],
+              prepTime: "15 minuti",
+              cookTime: "25 minuti",
+              servings: "4 persone"
+            },
+            {
+              title: "Insalata di Quinoa",
+              ingredients: [
+                "200g di quinoa",
+                "1 cetriolo",
+                "10 pomodorini",
+                "1 avocado",
+                "Succo di 1 limone",
+                "Olio d'oliva",
+                "Sale e pepe q.b.",
+                "Erbe aromatiche fresche"
+              ],
+              instructions: [
+                "Cuocere la quinoa secondo le istruzioni",
+                "Tagliare a dadini cetriolo e pomodorini",
+                "Sbucciare e tagliare l'avocado",
+                "Mescolare tutti gli ingredienti",
+                "Condire con limone, olio, sale e pepe"
+              ],
+              prepTime: "10 minuti",
+              cookTime: "15 minuti",
+              servings: "3 persone"
+            }
+          ];
           
-          // Testo
-          ctx.fillStyle = '#8B4513';
-          ctx.font = 'bold 60px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('Ricetta di Test', 540, 200);
+          // Funzione per generare un'immagine
+          async function generateRecipeImage(recipe, outputPath) {
+            const canvas = createCanvas(WIDTH, HEIGHT);
+            const ctx = canvas.getContext('2d');
+            
+            // Sfondo principale
+            ctx.fillStyle = '#F5F5DC'; // Beige chiaro
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            
+            // Barra superiore colorata
+            ctx.fillStyle = '#8B4513'; // Marrone
+            ctx.fillRect(0, 0, WIDTH, 160);
+            
+            // Titolo della ricetta (sulla barra superiore)
+            ctx.fillStyle = '#FFFFFF'; // Bianco
+            ctx.font = 'bold 60px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(recipe.title, WIDTH/2, 100);
+            
+            // Informazioni rapide
+            ctx.fillStyle = '#8B4513'; // Marrone
+            ctx.font = 'italic 30px Arial';
+            ctx.textAlign = 'center';
+            let infoText = '';
+            if (recipe.prepTime) infoText += `Prep: ${recipe.prepTime} `;
+            if (recipe.cookTime) infoText += `| Cottura: ${recipe.cookTime} `;
+            if (recipe.servings) infoText += `| Porzioni: ${recipe.servings}`;
+            ctx.fillText(infoText, WIDTH/2, 200);
+            
+            // Bordo decorativo intorno al contenuto principale
+            ctx.strokeStyle = '#8B4513'; // Marrone
+            ctx.lineWidth = 5;
+            ctx.strokeRect(40, 240, WIDTH - 80, HEIGHT - 280);
+            
+            // Sezione ingredienti
+            ctx.fillStyle = '#8B4513'; // Marrone
+            ctx.font = 'bold 40px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('Ingredienti:', 80, 290);
+            
+            // Lista ingredienti
+            ctx.font = '30px Arial';
+            let ingredientY = 340;
+            const maxIngredients = Math.min(8, recipe.ingredients.length);
+            for (let i = 0; i < maxIngredients; i++) {
+              const ingredient = recipe.ingredients[i];
+              ctx.fillText(`• ${ingredient}`, 100, ingredientY);
+              ingredientY += 45;
+            }
+            
+            // Se ci sono più ingredienti, indica che sono stati troncati
+            if (recipe.ingredients.length > maxIngredients) {
+              ctx.fillText('• ...', 100, ingredientY);
+            }
+            
+            // Footer con call-to-action
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 40px Arial';
+            ctx.fillStyle = '#8B4513'; // Marrone
+            ctx.fillText('Visita il nostro profilo', WIDTH/2, HEIGHT - 100);
+            ctx.font = '35px Arial';
+            ctx.fillText('per la ricetta completa!', WIDTH/2, HEIGHT - 50);
+            
+            // Salva l'immagine
+            const buffer = canvas.toBuffer('image/png');
+            fs.writeFileSync(outputPath, buffer);
+            
+            console.log(`Immagine creata: ${outputPath}`);
+            return outputPath;
+          }
           
-          // Salva l'immagine
-          const buffer = canvas.toBuffer('image/png');
-          fs.writeFileSync('data/images/test-recipe.png', buffer);
+          // Genera un'immagine per ogni ricetta
+          async function generateAllImages() {
+            console.log(`Generazione di ${recipes.length} immagini di ricette...`);
+            
+            for (let i = 0; i < recipes.length; i++) {
+              const recipe = recipes[i];
+              const outputPath = `${OUTPUT_DIR}/recipe-${i+1}.png`;
+              await generateRecipeImage(recipe, outputPath);
+            }
+            
+            // Crea un file JSON con le informazioni sulle immagini
+            const imageInfo = recipes.map((recipe, index) => ({
+              id: index + 1,
+              title: recipe.title,
+              imagePath: `${OUTPUT_DIR}/recipe-${index+1}.png`
+            }));
+            
+            fs.writeFileSync('data/recipe-images.json', JSON.stringify(imageInfo, null, 2));
+            console.log('Informazioni immagini salvate in: data/recipe-images.json');
+            
+            console.log('Generazione immagini completata!');
+          }
           
-          console.log('Immagine di test creata con successo!');
+          // Esegui la generazione
+          generateAllImages().catch(err => console.error('Errore:', err));
           EOL
           
-          node test-image.js
+          node recipe-generator.js
       
       - name: Upload generated files
         uses: actions/upload-artifact@master
