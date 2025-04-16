@@ -26,11 +26,7 @@ jobs:
             "description": "Automation for Instagram recipes",
             "dependencies": {
               "dotenv": "^16.0.0",
-              "canvas": "^2.9.0",
-              "cloudinary": "^1.37.3",
-              "node-fetch": "^2.6.12",
-              "mammoth": "^1.6.0",
-              "pdf-parse": "^1.1.1"
+              "canvas": "^2.9.0"
             }
           }' > package.json
       
@@ -42,93 +38,37 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libcairo2-dev libjpeg-dev libpango1.0-dev libgif-dev build-essential g++
       
-      - name: Create and execute image generator
+      - name: Create directories
+        run: mkdir -p data/images
+      
+      - name: Create simple test image
         run: |
-          mkdir -p src/image
-          echo 'const fs = require("fs");
-          const path = require("path");
-          const { createCanvas } = require("canvas");
-
-          // Configura i percorsi
-          const dataDir = path.join(__dirname, "../../data");
-          const imagesDir = path.join(dataDir, "images");
-          const WIDTH = 1080;
-          const HEIGHT = 1080;
-
-          // Crea le directory
-          if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-          }
-          if (!fs.existsSync(imagesDir)) {
-            fs.mkdirSync(imagesDir, { recursive: true });
-          }
-
-          // Esempio di ricette
-          const sampleRecipes = [
-            {
-              title: "Pasta al Pomodoro",
-              ingredients: ["400g pasta", "300g pomodori", "2 spicchi d\'aglio", "Basilico fresco", "Olio d\'oliva"]
-            },
-            {
-              title: "Risotto ai Funghi",
-              ingredients: ["320g riso per risotti", "250g funghi", "Cipolla", "Brodo vegetale", "Parmigiano"]
-            },
-            {
-              title: "Insalata di Quinoa",
-              ingredients: ["200g quinoa", "Pomodorini", "Cetrioli", "Avocado", "Succo di limone"]
-            }
-          ];
-
-          // Genera le immagini
-          console.log("Generazione immagini...");
+          cat > test-image.js << 'EOL'
+          const fs = require('fs');
+          const { createCanvas } = require('canvas');
           
-          for (let i = 0; i < sampleRecipes.length; i++) {
-            const recipe = sampleRecipes[i];
-            console.log(`Generazione immagine per "${recipe.title}"`);
-            
-            const canvas = createCanvas(WIDTH, HEIGHT);
-            const ctx = canvas.getContext("2d");
-            
-            // Sfondo
-            ctx.fillStyle = "#F5F5DC";
-            ctx.fillRect(0, 0, WIDTH, HEIGHT);
-            
-            // Bordo
-            ctx.strokeStyle = "#8B4513";
-            ctx.lineWidth = 20;
-            ctx.strokeRect(20, 20, WIDTH - 40, HEIGHT - 40);
-            
-            // Titolo
-            ctx.fillStyle = "#8B4513";
-            ctx.font = "bold 60px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText(recipe.title, WIDTH / 2, 200);
-            
-            // Ingredienti
-            ctx.font = "40px Arial";
-            ctx.fillText("Ingredienti", WIDTH / 2, 300);
-            
-            ctx.font = "30px Arial";
-            ctx.textAlign = "left";
-            for (let j = 0; j < recipe.ingredients.length; j++) {
-              ctx.fillText(`• ${recipe.ingredients[j]}`, 200, 350 + j * 50);
-            }
-            
-            // Footer
-            ctx.textAlign = "center";
-            ctx.font = "italic 30px Arial";
-            ctx.fillText("Visita il nostro profilo per la ricetta completa!", WIDTH / 2, HEIGHT - 100);
-            
-            // Salva l\'immagine
-            const outputPath = path.join(imagesDir, `recipe-${i+1}.png`);
-            const buffer = canvas.toBuffer("image/png");
-            fs.writeFileSync(outputPath, buffer);
-            console.log(`Immagine salvata: ${outputPath}`);
-          }
+          // Crea un'immagine di test
+          const canvas = createCanvas(1080, 1080);
+          const ctx = canvas.getContext('2d');
           
-          console.log("Generazione completata!");' > src/image/generator.js
+          // Sfondo
+          ctx.fillStyle = '#F5F5DC';
+          ctx.fillRect(0, 0, 1080, 1080);
           
-          node src/image/generator.js
+          // Testo
+          ctx.fillStyle = '#8B4513';
+          ctx.font = 'bold 60px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('Ricetta di Test', 540, 200);
+          
+          // Salva l'immagine
+          const buffer = canvas.toBuffer('image/png');
+          fs.writeFileSync('data/images/test-recipe.png', buffer);
+          
+          console.log('Immagine di test creata con successo!');
+          EOL
+          
+          node test-image.js
       
       - name: Upload generated files
         uses: actions/upload-artifact@master
