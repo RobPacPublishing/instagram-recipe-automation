@@ -1,56 +1,61 @@
 name: Generate Recipe Images
-
 on:
-  schedule:
-    # Esegui ogni giorno alle 11:00 UTC
-    - cron: '0 11 * * *'
-  # Consente l'esecuzione manuale dal tab Actions
-  workflow_dispatch:
-
+ schedule:
+   # Esegui ogni giorno alle 11:00 UTC
+   - cron: '0 11 * * *'
+ # Consente l'esecuzione manuale dal tab Actions
+ workflow_dispatch:
 jobs:
-  generate-images:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-      
-      - name: Create package.json
-        run: |
-          echo '{
-            "name": "instagram-recipe-automation",
-            "version": "1.0.0",
-            "description": "Automation for Instagram recipes",
-            "dependencies": {
-              "dotenv": "^16.0.0",
-              "canvas": "^2.9.0",
-              "cloudinary": "^1.37.3",
-              "node-fetch": "^2.6.12",
-              "mammoth": "^1.6.0",
-              "pdf-parse": "^1.1.1"
-            }
-          }' > package.json
-      
-      - name: Install dependencies
-        run: npm install
-      
-      - name: Install canvas dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libcairo2-dev libjpeg-dev libpango1.0-dev libgif-dev build-essential g++
-      
-      - name: Execute image generation script
-        env:
-          OFFLINE_MODE: 'true'
-        run: ./test.js
-      
-      - name: Upload generated files
-        uses: actions/upload-artifact@master
-        with:
-          name: generated-recipe-images
-          path: data/images/
+ generate-images:
+   runs-on: ubuntu-latest
+   
+   steps:
+     - name: Checkout repository
+       uses: actions/checkout@v3
+     
+     - name: Setup Node.js
+       uses: actions/setup-node@v3
+       with:
+         node-version: '16'
+     
+     - name: Create package.json
+       run: |
+         echo '{
+           "name": "instagram-recipe-automation",
+           "version": "1.0.0",
+           "description": "Automation for Instagram recipes",
+           "dependencies": {
+             "dotenv": "^16.0.0",
+             "canvas": "^2.9.0",
+             "cloudinary": "^1.37.3",
+             "node-fetch": "^2.6.12",
+             "mammoth": "^1.6.0",
+             "pdf-parse": "^1.1.1"
+           }
+         }' > package.json
+     
+     - name: Install dependencies
+       run: npm install
+     
+     - name: Install canvas dependencies
+       run: |
+         sudo apt-get update
+         sudo apt-get install -y libcairo2-dev libjpeg-dev libpango1.0-dev libgif-dev build-essential g++
+     
+     - name: Create and execute test script
+       run: |
+         echo 'console.log("Test in esecuzione...");
+         const fs = require("fs");
+         const path = require("path");
+         const imagesDir = path.join(__dirname, "data/images");
+         fs.mkdirSync(imagesDir, { recursive: true });
+         console.log("Directory creata:", imagesDir);
+         fs.writeFileSync(path.join(imagesDir, "test.txt"), "File di test");
+         console.log("File creato con successo!");' > test-script.js
+         node test-script.js
+     
+     - name: Upload generated files
+       uses: actions/upload-artifact@master
+       with:
+         name: generated-recipe-images
+         path: data/images/
